@@ -1,0 +1,7 @@
+{
+    "Assunto": ["Aleitamento", "Crescimento", "Vacinação", "Pré-natal", "Parto", 
+            "Apendicite", "Trauma", "Hipertensão", "Diabetes", "SUS"],
+    "Area": ["PED", "PED", "PED", "GO", "GO", "CIR", "CIR", "CM", "CM", "PREV"],
+    "Relevancia": [3, 2, 3, 3, 2, 3, 3, 3, 3, 3],
+    "LegendaRelevancia": "1: Pouco, 2: Médio, 3: Muito"
+}
