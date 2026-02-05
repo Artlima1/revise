@@ -3,53 +3,45 @@ from datetime import datetime, timedelta
 
 class SistemaEstudoMedico:
     def __init__(self):
-        self.df_history = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto"])
+        self.df_historico = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto"])
 
-    def processar_entradas(self, entries):
-        history = []
-        for entry in entries:
-            date_sunday = pd.to_datetime(entry['semana'])
+    def processar_entradas(self, entradas):
+        historico = []
+        for entrada in entradas:
+            data_domingo = pd.to_datetime(entrada['semana'])
             
-            for assunto, taxa, relevancia in zip(entry['assuntos'], entry['taxas'], entry['relevancias']):
-                history.append({
+            for assunto, taxa, relevancia in zip(entrada['assuntos'], entrada['taxas'], entrada['relevancias']):
+                historico.append({
                     "Assunto": assunto,
-                    "Data": date_sunday,
+                    "Data": data_domingo,
                     "Taxa_Acerto": taxa,
                     "Relevancia": relevancia,
                 })
 
-        self.df_history = pd.DataFrame(history)
-        self.df_history.sort_values(by=["Data"], inplace=True)
-        self.df_history['Fase'] = self.df_history.groupby('Assunto').cumcount() + 1
+        self.df_historico = pd.DataFrame(historico)
+        self.df_historico.sort_values(by=["Data"], inplace=True)
+        self.df_historico['Fase'] = self.df_historico.groupby('Assunto').cumcount() + 1
 
 
-    def gerar_lista_prioridades(self):
-        today = pd.to_datetime(datetime.now().date())
+    def gerar_calendario_revisoes(self):
         min_window = {1: 7, 2: 28, 3: 56}
+
+        df_prox_rev = self.df_historico.copy()
+        df_prox_rev = df_prox_rev[df_prox_rev['Fase'] == df_prox_rev.groupby('Assunto')['Fase'].transform('max')]
+        df_prox_rev = df_prox_rev[df_prox_rev['Fase'] < 4]
+        df_prox_rev["Proxima_Revisao"] = df_prox_rev['Data'] + pd.to_timedelta(df_prox_rev['Fase'].map(min_window), unit='D')
+        df_prox_rev["Fase"] = df_prox_rev['Fase']+1
+
+
+        df_prox_rev = df_prox_rev[df_prox_rev["Proxima_Revisao"] <= pd.to_datetime(datetime.now().date())]
+
+        df_prox_rev["Atraso_Dias"] = (pd.to_datetime(datetime.now().date()) - df_prox_rev["Proxima_Revisao"]).dt.days
+
+        df_prox_rev["Prioridade"] = (1 - df_prox_rev['Taxa_Acerto']) + \
+                                    (df_prox_rev["Atraso_Dias"] * 1.5) + \
+                                    (df_prox_rev['Relevancia'] * 15)
         
-        df = self.df_history.copy()
-        df = df[df['Fase'] == df.groupby('Assunto')['Fase'].transform('max')]
-        df = df[df['Fase'] < 4]
-
-        sugestoes = []
-        for _, row in df.iterrows():
-            dias_passados = (today - row['Data']).days
-            min_dias = min_window.get(row["Fase"], 0)
-            
-            if dias_passados >= min_dias:
-                atraso = dias_passados - min_dias
-                erro = 1 - row['Taxa_Acerto'] 
-                final_score = (row["Relevancia"] * 15) + (atraso * 1.5) + (erro * 40)
-                
-                sugestoes.append([
-                    row['Assunto'], 
-                    row['Fase'] + 1,
-                    round(final_score, 2), 
-                    f"{atraso} dias de atraso"
-                ])
-
-        df_final = pd.DataFrame(sugestoes, columns=["Assunto", "Próxima Fase", "Score", "Status"])
-        return df_final.sort_values(by="Score", ascending=False)
+        self.df_calendario = df_prox_rev.sort_values(by="Prioridade", ascending=False)
 
 # --- Exemplo de Uso Prático ---
 
@@ -72,6 +64,7 @@ entradas_usuario = [
 ]
 
 gestor.processar_entradas(entradas_usuario)
+gestor.gerar_calendario_revisoes()
 
 print("### LISTA DE ESTUDOS PRIORITÁRIOS ###")
-print(gestor.gerar_lista_prioridades().to_string(index=False))
+print(gestor.df_calendario)
