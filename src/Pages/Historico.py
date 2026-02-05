@@ -7,5 +7,16 @@ def render_historico(engine):
     if engine.df_historico.empty:
         st.info("Nenhum dado de histórico disponível. Por favor, carregue seus dados na barra lateral.")
     else:
-        st.dataframe(engine.df_historico.reset_index(drop=True))
+        # Filters
+        assuntos = sorted(engine.df_historico["Assunto"].unique())
+        filtro_assunto = st.multiselect("Filtrar por Assunto", options=assuntos, default=[])
+
+        df_display = engine.df_historico.copy()
+        if filtro_assunto:
+            df_display = df_display[df_display["Assunto"].isin(filtro_assunto)]
+
+        # Formatting
+        df_display["Data"] = df_display["Data"].dt.date
+        
+        st.dataframe(df_display, hide_index=True)
 
