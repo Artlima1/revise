@@ -1,2 +1,8 @@
-2025-12-28,SUS;Apendicite,0.85;0.60,0.7;0.5
-2026-01-11,Diabetes;SUS,0.9;0.95,0.6;0.7
+30/11/2025,Cardiologia;Pneumonia,0.70;0.80,1000;600
+14/12/2025,Fraturas;Dermatologia,0.90;0.65,400;800
+28/12/2025,SUS;Apendicite,0.55;0.60,1200;200
+11/01/2026,Diabetes;SUS,0.9;0.65,500;1200
+25/01/2026,Asma;Hipertensão;SUS,0.75;0.85;0.70,700;900;1200
+01/02/2026,Diabetes;Infarto,0.95;0.60,500;1100
+08/02/2026,Pediatria;Vacinação,0.80;0.90,800;300
+15/02/2026,Ginecologia;Obstetricia,0.65;0.70,950;1050

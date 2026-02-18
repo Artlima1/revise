@@ -1,6 +1,9 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
+# - Mais filtros 
+
+
 class Revise:
     def __init__(self):
         self.df_historico = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto"])
@@ -26,20 +29,20 @@ class Revise:
                     "semana": row[0],
                     "assuntos": row[1].split(';'),
                     "taxas": [float(t) for t in row[2].split(';') if t],
-                    "relevancias": [float(r) for r in row[3].split(';') if r],
+                    "questoes_no_banco": [float(r) for r in row[3].split(';') if r],
                 })
 
         if entradas:
             historico = []
             for entrada in entradas:
-                data_domingo = pd.to_datetime(entrada['semana'])
+                data_domingo = pd.to_datetime(entrada['semana'], dayfirst=True)
                 
-                for assunto, taxa, relevancia in zip(entrada['assuntos'], entrada['taxas'], entrada['relevancias']):
+                for assunto, taxa, questoes_no_banco in zip(entrada['assuntos'], entrada['taxas'], entrada['questoes_no_banco']):
                     historico.append({
                         "Assunto": assunto,
                         "Data": data_domingo,
                         "Taxa_Acerto": taxa,
-                        "Relevancia": relevancia,
+                        "Questoes_no_Banco": questoes_no_banco,
                     })
 
             self.df_historico = pd.DataFrame(historico)
@@ -53,7 +56,9 @@ class Revise:
         df_prox_rev = self.df_historico.copy()
         df_prox_rev = df_prox_rev[df_prox_rev['Fase'] == df_prox_rev.groupby('Assunto')['Fase'].transform('max')]
         df_prox_rev = df_prox_rev[df_prox_rev['Fase'] < 4]
-        df_prox_rev["Proxima_Revisao"] = df_prox_rev['Data'] + pd.to_timedelta(df_prox_rev['Fase'].map(min_window), unit='D')
+        
+        df_prox_rev.rename(columns={"Data": "Ultima_Revisao"}, inplace=True)
+        df_prox_rev["Proxima_Revisao"] = df_prox_rev['Ultima_Revisao'] + pd.to_timedelta(df_prox_rev['Fase'].map(min_window), unit='D')
         df_prox_rev["Fase"] = df_prox_rev['Fase']+1
 
 
@@ -61,8 +66,19 @@ class Revise:
 
         df_prox_rev["Atraso_Dias"] = (pd.to_datetime(datetime.now().date()) - df_prox_rev["Proxima_Revisao"]).apply(lambda x: x.days)
 
-        df_prox_rev["Prioridade"] = (1 - df_prox_rev['Taxa_Acerto']) + \
-                                    (df_prox_rev["Atraso_Dias"] * 1.5) + \
-                                    (df_prox_rev['Relevancia'] * 15)
+        taxa_erro = (1 - df_prox_rev['Taxa_Acerto'])
+        taxa_erro = taxa_erro.clip(0, 1)
+
+        # Normalize Questoes_no_Banco between 200 and 1400 with clipping
+        fator_banco = (df_prox_rev['Questoes_no_Banco'] - 200) / (1400 - 200)
+        fator_banco = fator_banco.clip(0, 1)
+
+        # Weighted score (50% error rate, 50% bank size)
+        score = (taxa_erro * 0.5) + (fator_banco * 0.5)
+
+        # Scale score (0 to 1) to range [30, 80]
+        min_q, max_q = 30, 80
+        df_prox_rev["Questoes_a_fazer"] = min_q + (score * (max_q - min_q))
+        df_prox_rev["Questoes_a_fazer"] = df_prox_rev["Questoes_a_fazer"].round().astype(int)
         
-        self.df_calendario = df_prox_rev.sort_values(by="Prioridade", ascending=False)
+        self.df_calendario = df_prox_rev.sort_values(by="Proxima_Revisao").reset_index(drop=True)
