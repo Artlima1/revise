@@ -5,8 +5,12 @@ from datetime import datetime, timedelta
 
 
 class Revise:
+    MIN_REV_QUESTIONS = 30
+    MAX_REV_QUESTIONS = 80
+    REV_WINDOWS = {1: 21, 2: 49, 3: 77}  # Dias para cada fase de revisão
+
     def __init__(self):
-        self.df_historico = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto"])
+        self.df_historico = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto", "Questoes_no_Banco", "Questoes_Feitas"])
         self.df_calendario = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto", "Relevancia", "Proxima_Revisao", "Atraso_Dias", "Prioridade"])
 
     def processar_entradas(self, entradas=None, from_csv=None):
@@ -30,6 +34,7 @@ class Revise:
                     "assuntos": row[1].split(';'),
                     "taxas": [float(t) for t in row[2].split(';') if t],
                     "questoes_no_banco": [float(r) for r in row[3].split(';') if r],
+                    "questoes_feitas": [float(q) for q in row[4].split(';') if q],
                 })
 
         if entradas:
@@ -37,12 +42,13 @@ class Revise:
             for entrada in entradas:
                 data_domingo = pd.to_datetime(entrada['semana'], dayfirst=True)
                 
-                for assunto, taxa, questoes_no_banco in zip(entrada['assuntos'], entrada['taxas'], entrada['questoes_no_banco']):
+                for assunto, taxa, questoes_no_banco, questoes_feitas in zip(entrada['assuntos'], entrada['taxas'], entrada['questoes_no_banco'], entrada['questoes_feitas']):
                     historico.append({
                         "Assunto": assunto,
                         "Data": data_domingo,
                         "Taxa_Acerto": taxa,
                         "Questoes_no_Banco": questoes_no_banco,
+                        "Questoes_Feitas": questoes_feitas
                     })
 
             self.df_historico = pd.DataFrame(historico)
@@ -51,14 +57,12 @@ class Revise:
 
 
     def gerar_calendario_revisoes(self):
-        min_window = {1: 7, 2: 28, 3: 56}
-
         df_prox_rev = self.df_historico.copy()
         df_prox_rev = df_prox_rev[df_prox_rev['Fase'] == df_prox_rev.groupby('Assunto')['Fase'].transform('max')]
         df_prox_rev = df_prox_rev[df_prox_rev['Fase'] < 4]
         
         df_prox_rev.rename(columns={"Data": "Ultima_Revisao"}, inplace=True)
-        df_prox_rev["Proxima_Revisao"] = df_prox_rev['Ultima_Revisao'] + pd.to_timedelta(df_prox_rev['Fase'].map(min_window), unit='D')
+        df_prox_rev["Proxima_Revisao"] = df_prox_rev['Ultima_Revisao'] + pd.to_timedelta(df_prox_rev['Fase'].map(self.REV_WINDOWS), unit='D')
         df_prox_rev["Fase"] = df_prox_rev['Fase']+1
 
 
@@ -77,7 +81,7 @@ class Revise:
         score = (taxa_erro * 0.5) + (fator_banco * 0.5)
 
         # Scale score (0 to 1) to range [30, 80]
-        min_q, max_q = 30, 80
+        min_q, max_q = self.MIN_REV_QUESTIONS, self.MAX_REV_QUESTIONS
         df_prox_rev["Questoes_a_fazer"] = min_q + (score * (max_q - min_q))
         df_prox_rev["Questoes_a_fazer"] = df_prox_rev["Questoes_a_fazer"].round().astype(int)
         

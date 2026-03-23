@@ -39,7 +39,15 @@ def main():
     uploaded_file = st.sidebar.file_uploader("Escolha um arquivo CSV", type="csv")
     
     with st.sidebar.expander("Ver formato esperado"):
-        st.code("semana,assuntos,taxas,relevancias\n2026-01-11,Diabetes;SUS,0.90;0.95,0.6;0.7")
+        exemplo_data = {
+            "semana": ["2026-01-11"],
+            "assuntos": ["Diabetes;SUS"],
+            "taxas": ["0.90;0.95"],
+            "relevancias": ["0.6;0.7"],
+            "questoes_no_banco": ["100;150"],
+            "questoes_feitas": ["80;120"]
+        }
+        st.dataframe(pd.DataFrame(exemplo_data), use_container_width=True)
 
     if uploaded_file is not None:
         try:
