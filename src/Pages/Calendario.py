@@ -25,19 +25,18 @@ def render_calendario(engine):
             st.info("Nenhuma revisão programada para esta semana")
         else:
             # Agrupar por semana (usando a data como referência de domingo)
-            df_cal['semana'] = df_cal['Proxima_Revisao'].dt.to_period('W')
-            weeks = sorted(df_cal['semana'].unique())
+            weeks = sorted(df_cal['Proxima_Revisao'].unique())
             
             # Display calendar for each week
-            for week_period in weeks:
-                # Get the week date (assuming it's the Sunday of that week)
-                week_start = week_period.start_time
-                week_end = week_start + timedelta(days=6)
+            for week_sunday in weeks:
+                # Calculate Monday from Sunday (Sunday is the end of the week)
+                week_start = pd.Timestamp(week_sunday)
+                week_end = pd.Timestamp(week_sunday) + pd.Timedelta(days=6)
                 
                 st.subheader(f"Semana de {week_start.strftime('%d/%m/%Y')} a {week_end.strftime('%d/%m/%Y')}")
                 
                 # Get revisions for this week
-                week_revisions = df_cal[df_cal['semana'] == week_period].copy()
+                week_revisions = df_cal[df_cal['Proxima_Revisao'] == week_sunday].copy()
                 
                 # Display revisions in a nice format
                 for idx, (_, row) in enumerate(week_revisions.iterrows()):

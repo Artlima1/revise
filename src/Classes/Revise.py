@@ -81,3 +81,5 @@ class Revise:
         df_prox_rev["Questoes_a_fazer"] = df_prox_rev["Questoes_a_fazer"].round().astype(int)
 
         self.df_calendario = df_prox_rev.sort_values(by="Proxima_Revisao").reset_index(drop=True)
+
+        print(self.df_calendario)
