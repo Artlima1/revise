@@ -65,11 +65,6 @@ class Revise:
         df_prox_rev["Proxima_Revisao"] = df_prox_rev['Ultima_Revisao'] + pd.to_timedelta(df_prox_rev['Fase'].map(self.REV_WINDOWS), unit='D')
         df_prox_rev["Fase"] = df_prox_rev['Fase']+1
 
-
-        df_prox_rev = df_prox_rev[df_prox_rev["Proxima_Revisao"] <= pd.to_datetime(datetime.now().date())]
-
-        df_prox_rev["Atraso_Dias"] = (pd.to_datetime(datetime.now().date()) - df_prox_rev["Proxima_Revisao"]).apply(lambda x: x.days)
-
         taxa_erro = (1 - df_prox_rev['Taxa_Acerto'])
         taxa_erro = taxa_erro.clip(0, 1)
 
@@ -84,5 +79,5 @@ class Revise:
         min_q, max_q = self.MIN_REV_QUESTIONS, self.MAX_REV_QUESTIONS
         df_prox_rev["Questoes_a_fazer"] = min_q + (score * (max_q - min_q))
         df_prox_rev["Questoes_a_fazer"] = df_prox_rev["Questoes_a_fazer"].round().astype(int)
-        
+
         self.df_calendario = df_prox_rev.sort_values(by="Proxima_Revisao").reset_index(drop=True)
