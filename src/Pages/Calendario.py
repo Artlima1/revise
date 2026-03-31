@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime, timedelta
 
 def render_calendario(engine):
     st.header("📅 Calendário de Revisões")
@@ -19,14 +20,39 @@ def render_calendario(engine):
         if not show_all_reviews:
             df_cal = df_cal[df_cal["Proxima_Revisao"] < pd.Timestamp.now()]
         
-        # Formatting
-        df_cal["Ultima_Revisao"] = df_cal["Ultima_Revisao"].dt.strftime("%d/%m/%Y")
-        df_cal["Proxima_Revisao"] = df_cal["Proxima_Revisao"].dt.strftime("%d/%m/%Y")
-        
         # Verificar se há dados após filtro
         if df_cal.empty:
             st.info("Nenhuma revisão programada para esta semana")
         else:
-            # Select specific columns
-            colunas_exibir = ["Assunto", "Ultima_Revisao", "Proxima_Revisao", "Fase", "Questoes_a_fazer"]
-            st.dataframe(df_cal[colunas_exibir].reset_index(drop=True), hide_index=True)
+            # Agrupar por semana (usando a data como referência de domingo)
+            df_cal['semana'] = df_cal['Proxima_Revisao'].dt.to_period('W')
+            weeks = sorted(df_cal['semana'].unique())
+            
+            # Display calendar for each week
+            for week_period in weeks:
+                # Get the week date (assuming it's the Sunday of that week)
+                week_start = week_period.start_time
+                week_end = week_start + timedelta(days=6)
+                
+                st.subheader(f"Semana de {week_start.strftime('%d/%m/%Y')} a {week_end.strftime('%d/%m/%Y')}")
+                
+                # Get revisions for this week
+                week_revisions = df_cal[df_cal['semana'] == week_period].copy()
+                
+                # Display revisions in a nice format
+                for idx, (_, row) in enumerate(week_revisions.iterrows()):
+                    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
+                    
+                    with col1:
+                        st.write(f"{row['Assunto']}")
+                    with col2:
+                        st.write(f"📝 {row['Fase']}° Revisão")
+                    with col3:
+                        st.write(f"📅 Última Revisão: {row['Ultima_Revisao'].strftime('%d/%m/%Y')}")
+                    with col4:
+                        st.write(f"🎯 {row['Questoes_a_fazer']} questões")
+                    
+                    if idx < len(week_revisions) - 1:
+                        st.divider()
+                
+                st.markdown("---")

@@ -61,10 +61,10 @@ def main():
     if 'engine' not in st.session_state:
         st.session_state.engine = engine
 
-    # Create tabs
+    # Create tabs with key to preserve state
     tab1, tab2 = st.tabs([
         "📊 Historico",
-        "Calendário de Revisões",
+        "📅 Calendário de Revisões",
     ])
 
     with tab1:
