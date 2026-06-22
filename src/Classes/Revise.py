@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 
 class Revise:
-    MIN_REV_QUESTIONS = 30
+    MIN_REV_QUESTIONS = 20
     MAX_REV_QUESTIONS = 80
     REV_WINDOWS = {1: 21, 2: 49, 3: 77}  # Dias para cada fase de revisão
 
