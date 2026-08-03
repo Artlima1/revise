@@ -5,9 +5,9 @@ from datetime import datetime, timedelta
 
 
 class Revise:
-    MIN_REV_QUESTIONS = 20
-    MAX_REV_QUESTIONS = 80
-    REV_WINDOWS = {1: 21, 2: 49, 3: 77}  # Dias para cada fase de revisão
+    MIN_REV_QUESTIONS = 15
+    MAX_REV_QUESTIONS = 35
+    REV_WINDOWS = {1: 21, 2: 49}  # Dias para cada fase de revisão
 
     def __init__(self):
         self.df_historico = pd.DataFrame(columns=["Assunto", "Fase", "Data", "Taxa_Acerto", "Questoes_no_Banco", "Questoes_Feitas"])
@@ -59,7 +59,7 @@ class Revise:
     def gerar_calendario_revisoes(self):
         df_prox_rev = self.df_historico.copy()
         df_prox_rev = df_prox_rev[df_prox_rev['Fase'] == df_prox_rev.groupby('Assunto')['Fase'].transform('max')]
-        df_prox_rev = df_prox_rev[df_prox_rev['Fase'] < 4]
+        df_prox_rev = df_prox_rev[df_prox_rev['Fase'] < 3]
         
         df_prox_rev.rename(columns={"Data": "Ultima_Revisao"}, inplace=True)
         df_prox_rev["Proxima_Revisao"] = df_prox_rev['Ultima_Revisao'] + pd.to_timedelta(df_prox_rev['Fase'].map(self.REV_WINDOWS), unit='D')
